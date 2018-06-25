@@ -1,83 +1,66 @@
 ﻿<# 
-            " Satnaam WaheGuru Ji"     
+            " Sideload office add-in"     
              
-            Author  :  Aman Dhally 
-            E-Mail  :  amandhally@gmail.com 
-            website :  www.amandhally.net 
-            twitter : https://twitter.com/#!/AmanDhally 
-            facebook: http://www.facebook.com/groups/254997707860848/ 
-            Linkedin: http://www.linkedin.com/profile/view?id=23651495 
+            Author  :  shnkn
+            E-Mail  :  302sk@163.com 
+          
  
-            Date    : 31-August-2012 
-            File    : Office_2010_Trusted_Locations 
-            Purpose : Set trusted locations for Office 2010 Templates 
+            Date    : 2018-06-18 
+            File    : sideload-office-addin 
+            Purpose : sideload office addin 
              
             Version : 1 
  
-            my Spider runned Away :(  
- 
- 
+            
 #> 
  
-#-------------------------------------------------- 
-# Helpful Weblinks for script 
-#-------------------------------------------------- 
- 
-# http://technet.microsoft.com/en-us/library/cc179039.aspx#implementlocations 
-# http://technet.microsoft.com/en-us/library/dd315394.aspx 
-# 
- 
- 
- 
+
 #-------------------------------------------------- 
 # Global Variables Section 
 #-------------------------------------------------- 
  
+
+#Create share folder for save add-in xml file
+$trustFolder = 'c:\testfolder'
+if((Test-Path $trustFolder) -eq $false){
+    Write-Host "==>创建add-in xml目录"
+    mkdir c:\testfolder
+}
+else{
+   Write-Host "==>add-in xml目录已存在"
+}
+
+Write-Host "==>拷贝add-in xml文件"
+copy .\addinexample.xml C:\testfolder -Force # copy add-in xml file to testfolder
+
+if (!(Get-SmbShare -Name sharedtestfolder -ea 0)) {
+    net share sharedtestfolder=c:\testfolder  #require administrator permission
+    #Write-Host "==>目录共享成功"
+}
+else {
+    Write-Host "==>共享目录已存在"
+}
+
 #Date 
 # 
 $setDATE = (Get-Date).ToString() 
 # 
-# trusted Location to Add Addd Your templates Path or location path 
+# trusted Location to save add-in xml file
 # 
 $trustlocation = '\\localhost\sharedtestfolder'    # <---- Change this as per your requirement 
 # 
-# Note I am using Location99 as a KEY so that i can test it and i know that is created by me. 
+# Note I am using static guid for key name, and this guid could probably never conflict with existed key
 # 
-$guid = (New-Guid).ToString()
+$guid = "396f6026-26d4-4f20-bf58-47d789e12345"  #(New-Guid).ToString()
 $guidstr = "{$guid}"
 $regWORD = "HKCU:\Software\Microsoft\Office\16.0\WEF\TrustedCatalogs\{$guid}"
-# HKCU:\Software\Microsoft\Office\14.0\Word\Security\Trusted Locations\Location99' 
-# Testing if Location 9 Key Exists in word. 
+
+# Testing if Location guid Key Exists in word. 
 $testWORDPAth = Test-Path $regWORD 
 # 
 # 
-$regEXCEL = 'HKCU:\Software\Microsoft\Office\14.0\Excel\Security\Trusted Locations\Location99' 
-# Testing if Location 9 Key Exists in Excel registry Key. 
-$testEXCELPATH = Test-Path $regEXCEL 
 # 
-# 
-$regPPT = 'HKCU:\Software\Microsoft\Office\14.0\Powerpoint\Security\Trusted Locations\Location99' 
-# Testing if Location 9 Key Exists in PowerPoint. 
-$testPPTPATH = Test-Path $regPPT 
-# 
-# 
-$setDesription = "Trusted location for YOUR COMPANY in-house Templates"   #<----------- You can change the Description 
-# 
-# Registry Keys Need to be Create 
-# 
-# AllowSubfolders = 1 
-# Date = todays Date 
-# Description = setDescription 
-# Path = location 
- 
-#-------------------------------------------------- 
-# Global Variables Section Ends Here |  
-#-------------------------------------------------- 
- 
-# You can comment this if you want :) this is just a quote. 
-write-host "Love me when I least deserve it, because that’s when I really need it." -ForegroundColor 'Yellow' 
-Write-Host "                                           - Sri Guru Granth Sahib Ji " -ForegroundColor 'Green' 
-"`n" 
+$setDesription = "Trusted location for the office add-in xml file"   #<----------- You can change the Description 
 # 
  
 #-------------------------------------------------- 
@@ -87,22 +70,26 @@ Write-Host "                                           - Sri Guru Granth Sahib J
 # 
 # For Word 
 # 
+
+# if that key exist then remove it
+if ($testWORDPAth -eq $true){
+    Remove-Item $regWORD -Recurse
+}
  
-if ( $testWORDPAth -eq $false) { 
-     
-    Write-Host "==> Adding Trusted Location for Microsoft Word" -ForegroundColor 'Green' 
-    New-Item -Path $regWORD -type Directory -Force | Out-Null 
-    #New-ItemProperty -Path $regWORD -Name "Date" -Value $setDATE | Out-Null 
-    New-ItemProperty -Path $regWORD -Name "Url" -Value $trustlocation | Out-Null 
-    New-ItemProperty -Path $regWORD -Name "Id" -Value $guidstr | Out-Null 
-    New-ItemProperty -Path $regWORD -Type DWord  -Name "Flags" -Value 0 | Out-Null 
+# create registry key for trusted add-in folder
+Write-Host "==> Adding Trusted Location for Microsoft Word add-in" -ForegroundColor 'Green' 
+New-Item -Path $regWORD -type Directory -Force | Out-Null 
+#New-ItemProperty -Path $regWORD -Name "Date" -Value $setDATE | Out-Null 
+New-ItemProperty -Path $regWORD -Name "Url" -Value $trustlocation | Out-Null 
+New-ItemProperty -Path $regWORD -Name "Id" -Value $guidstr | Out-Null 
+New-ItemProperty -Path $regWORD -Type DWord  -Name "Flags" -Value 1 | Out-Null 
          
-    } else {  
-    Write-Host "==>  Word Templated are already added in Trusted Locations."  -ForegroundColor 'Green' 
-    } 
+    
+# pause for check debug info
+cmd /c pause | out-null
 
 #-------------------------------------------------- 
 # Script Section Ends Here || 
 #-------------------------------------------------- 
  
-############### A m a n   D h a l l y .. 
+############### shnkn 
